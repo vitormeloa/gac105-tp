@@ -187,7 +187,7 @@ func gerarGrafico(sequencialTimes, paraleloTimes plotter.Values, ks []int) error
 	p.Legend.Add("Sequencial", sequencialBars)
 	p.Legend.Add("Paralelizado", paraleloBars)
 	p.Legend.Top = true
-	p.Legend.XOffs = -vg.Inch
+	p.Legend.Left = true
 
 	if err := p.Save(8*vg.Inch, 6*vg.Inch, "data/comparacao_kmeans.png"); err != nil {
 		return err
