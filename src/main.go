@@ -133,30 +133,35 @@ func gerarGrafico(sequencialTimes, paraleloTimes plotter.Values, ks []int) error
 	p.X.Label.Text = "Número de Clusters (k)"
 	p.Y.Label.Text = "Tempo de Execução (segundos)"
 
-	sequencialBars, err := plotter.NewBarChart(sequencialTimes, vg.Points(20))
+	barWidth := vg.Points(10)
+	spaceBetweenBars := vg.Points(5)
+	sequencialBars, err := plotter.NewBarChart(sequencialTimes, barWidth)
 	if err != nil {
 		return err
 	}
 	sequencialBars.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255}
-	sequencialBars.Offset = -vg.Points(10)
-	paraleloBars, err := plotter.NewBarChart(paraleloTimes, vg.Points(20))
+	sequencialBars.Offset = -spaceBetweenBars
+
+	paraleloBars, err := plotter.NewBarChart(paraleloTimes, barWidth)
 	if err != nil {
 		return err
 	}
 	paraleloBars.Color = color.RGBA{R: 0, G: 0, B: 255, A: 255}
-	paraleloBars.Offset = vg.Points(10)
-
+	paraleloBars.Offset = spaceBetweenBars
 	p.Add(sequencialBars, paraleloBars)
 
-	p.NominalX(fmt.Sprintf("%d", ks[0]), fmt.Sprintf("%d", ks[1]), fmt.Sprintf("%d", ks[2]))
+	labels := make([]string, len(ks))
+	for i, k := range ks {
+		labels[i] = fmt.Sprintf("%d", k)
+	}
+	p.NominalX(labels...)
 
 	p.Legend.Add("Sequencial", sequencialBars)
 	p.Legend.Add("Paralelizado", paraleloBars)
-
 	p.Legend.Top = true
-	p.Legend.Left = true
+	p.Legend.XOffs = -vg.Inch
 
-	if err := p.Save(6*vg.Inch, 4*vg.Inch, "data/comparacao_kmeans.png"); err != nil {
+	if err := p.Save(8*vg.Inch, 6*vg.Inch, "data/comparacao_kmeans.png"); err != nil {
 		return err
 	}
 
