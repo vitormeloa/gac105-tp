@@ -4,14 +4,34 @@ import (
 	"encoding/csv"
 	"fmt"
 	"log"
-	"math"
 	"math/rand"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 )
 
+// Estruturas de dados
+type Cliente struct {
+	Idade              int
+	Genero             int
+	Localizacao        int
+	ValorTotalGasto    float64
+	FrequenciaCompras  int
+	TipoProduto        int
+	DiasDesdeUltCompra int
+}
+
+type Centroid struct {
+	Idade              float64
+	Genero             float64
+	Localizacao        float64
+	ValorTotalGasto    float64
+	FrequenciaCompras  float64
+	TipoProduto        float64
+	DiasDesdeUltCompra float64
+}
+
+// Função para carregar dados
 func carregarDados(nomeArquivo string) ([]Cliente, error) {
 	file, err := os.Open(nomeArquivo)
 	if err != nil {
@@ -70,6 +90,7 @@ func carregarDados(nomeArquivo string) ([]Cliente, error) {
 	return clientes, nil
 }
 
+// Função para inicializar os centróides
 func inicializarCentroids(clientes []Cliente, k int) []Centroid {
 	rand.Seed(time.Now().UnixNano())
 	centroids := make([]Centroid, k)
@@ -85,178 +106,6 @@ func inicializarCentroids(clientes []Cliente, k int) []Centroid {
 			DiasDesdeUltCompra: float64(c.DiasDesdeUltCompra),
 		}
 	}
-	return centroids
-}
-
-func calcularDistancia(c Cliente, centroide Centroid) float64 {
-	return math.Sqrt(
-		math.Pow(float64(c.Idade)-centroide.Idade, 2) +
-			math.Pow(float64(c.Genero)-centroide.Genero, 2) +
-			math.Pow(float64(c.Localizacao)-centroide.Localizacao, 2) +
-			math.Pow(c.ValorTotalGasto-centroide.ValorTotalGasto, 2) +
-			math.Pow(float64(c.FrequenciaCompras)-centroide.FrequenciaCompras, 2) +
-			math.Pow(float64(c.TipoProduto)-centroide.TipoProduto, 2) +
-			math.Pow(float64(c.DiasDesdeUltCompra)-centroide.DiasDesdeUltCompra, 2),
-	)
-}
-
-func atribuirClusters(clientes []Cliente, centroids []Centroid) []int {
-	clusters := make([]int, len(clientes))
-	var wg sync.WaitGroup
-
-	for i := range clientes {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			menorDist := math.MaxFloat64
-			clusterIndex := 0
-			for j, centroide := range centroids {
-				dist := calcularDistancia(clientes[i], centroide)
-				if dist < menorDist {
-					menorDist = dist
-					clusterIndex = j
-				}
-			}
-			clusters[i] = clusterIndex
-		}(i)
-	}
-	wg.Wait()
-	return clusters
-}
-
-func atualizarCentroids(clientes []Cliente, clusters []int, k int) []Centroid {
-	centroids := make([]Centroid, k)
-	contadores := make([]int, k)
-
-	for i, cliente := range clientes {
-		cluster := clusters[i]
-		centroids[cluster].Idade += float64(cliente.Idade)
-		centroids[cluster].Genero += float64(cliente.Genero)
-		centroids[cluster].Localizacao += float64(cliente.Localizacao)
-		centroids[cluster].ValorTotalGasto += cliente.ValorTotalGasto
-		centroids[cluster].FrequenciaCompras += float64(cliente.FrequenciaCompras)
-		centroids[cluster].TipoProduto += float64(cliente.TipoProduto)
-		centroids[cluster].DiasDesdeUltCompra += float64(cliente.DiasDesdeUltCompra)
-		contadores[cluster]++
-	}
-
-	for i := 0; i < k; i++ {
-		if contadores[i] > 0 {
-			centroids[i].Idade /= float64(contadores[i])
-			centroids[i].Genero /= float64(contadores[i])
-			centroids[i].Localizacao /= float64(contadores[i])
-			centroids[i].ValorTotalGasto /= float64(contadores[i])
-			centroids[i].FrequenciaCompras /= float64(contadores[i])
-			centroids[i].TipoProduto /= float64(contadores[i])
-			centroids[i].DiasDesdeUltCompra /= float64(contadores[i])
-		}
-	}
-
-	return centroids
-}
-
-func convergiram(centroidsAntigos, centroidsNovos []Centroid, tolerancia float64) bool {
-	for i := range centroidsAntigos {
-		if calcularDistanciaEntreCentroids(centroidsAntigos[i], centroidsNovos[i]) > tolerancia {
-			return false
-		}
-	}
-	return true
-}
-
-func calcularDistanciaEntreCentroids(a, b Centroid) float64 {
-	return math.Sqrt(
-		math.Pow(a.Idade-b.Idade, 2) +
-			math.Pow(a.Genero-b.Genero, 2) +
-			math.Pow(a.Localizacao-b.Localizacao, 2) +
-			math.Pow(a.ValorTotalGasto-b.ValorTotalGasto, 2) +
-			math.Pow(a.FrequenciaCompras-b.FrequenciaCompras, 2) +
-			math.Pow(a.TipoProduto-b.TipoProduto, 2) +
-			math.Pow(a.DiasDesdeUltCompra-b.DiasDesdeUltCompra, 2),
-	)
-}
-
-func kmeans(clientes []Cliente, k int, maxIteracoes int, tolerancia float64) []int {
-	centroids := inicializarCentroids(clientes, k)
-
-	for i := 0; i < maxIteracoes; i++ {
-		clusters := atribuirClusters(clientes, centroids)
-		novosCentroids := atualizarCentroids(clientes, clusters, k)
-
-		if convergiram(centroids, novosCentroids, tolerancia) {
-			fmt.Printf("Convergência atingida após %d iterações.\n", i+1)
-			break
-		}
-
-		centroids = novosCentroids
-	}
-
-	return atribuirClusters(clientes, centroids)
-}
-
-func kmeansSequencial(clientes []Cliente, k int, maxIteracoes int, tolerancia float64) []int {
-	centroids := inicializarCentroids(clientes, k)
-
-	for i := 0; i < maxIteracoes; i++ {
-		clusters := atribuirClustersSequencial(clientes, centroids)
-		novosCentroids := atualizarCentroidsSequencial(clientes, clusters, k)
-
-		if convergiram(centroids, novosCentroids, tolerancia) {
-			fmt.Printf("Convergência atingida após %d iterações.\n", i+1)
-			break
-		}
-
-		centroids = novosCentroids
-	}
-
-	return atribuirClustersSequencial(clientes, centroids)
-}
-
-func atribuirClustersSequencial(clientes []Cliente, centroids []Centroid) []int {
-	clusters := make([]int, len(clientes))
-	for i, cliente := range clientes {
-		menorDist := math.MaxFloat64
-		clusterIndex := 0
-		for j, centroide := range centroids {
-			dist := calcularDistancia(cliente, centroide)
-			if dist < menorDist {
-				menorDist = dist
-				clusterIndex = j
-			}
-		}
-		clusters[i] = clusterIndex
-	}
-	return clusters
-}
-
-func atualizarCentroidsSequencial(clientes []Cliente, clusters []int, k int) []Centroid {
-	centroids := make([]Centroid, k)
-	contadores := make([]int, k)
-
-	for i, cliente := range clientes {
-		cluster := clusters[i]
-		centroids[cluster].Idade += float64(cliente.Idade)
-		centroids[cluster].Genero += float64(cliente.Genero)
-		centroids[cluster].Localizacao += float64(cliente.Localizacao)
-		centroids[cluster].ValorTotalGasto += cliente.ValorTotalGasto
-		centroids[cluster].FrequenciaCompras += float64(cliente.FrequenciaCompras)
-		centroids[cluster].TipoProduto += float64(cliente.TipoProduto)
-		centroids[cluster].DiasDesdeUltCompra += float64(cliente.DiasDesdeUltCompra)
-		contadores[cluster]++
-	}
-
-	for i := 0; i < k; i++ {
-		if contadores[i] > 0 {
-			centroids[i].Idade /= float64(contadores[i])
-			centroids[i].Genero /= float64(contadores[i])
-			centroids[i].Localizacao /= float64(contadores[i])
-			centroids[i].ValorTotalGasto /= float64(contadores[i])
-			centroids[i].FrequenciaCompras /= float64(contadores[i])
-			centroids[i].TipoProduto /= float64(contadores[i])
-			centroids[i].DiasDesdeUltCompra /= float64(contadores[i])
-		}
-	}
-
 	return centroids
 }
 
