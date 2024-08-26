@@ -92,11 +92,13 @@ func inicializarCentroids(clientes []Cliente, k int) []Centroid {
 
 func main() {
 	clientes, err := carregarDados("data/clientes.csv")
+
 	if err != nil {
 		log.Fatalf("Erro ao carregar dados: %v", err)
 	}
 
 	ks := []int{1, 2, 3, 5, 8, 13, 21, 34, 55, 89}
+
 	maxIteracoes := 100
 	tolerancia := 0.0001
 	numExecucoes := 10
@@ -104,8 +106,16 @@ func main() {
 	sequencialTimes := make(plotter.Values, len(ks))
 	paraleloTimes := make(plotter.Values, len(ks))
 
+	outFile, err := os.Create("data/analises.txt")
+
+	if err != nil {
+		log.Fatalf("Erro ao criar arquivo de saída: %v", err)
+	}
+
+	defer outFile.Close()
+
 	for i, k := range ks {
-		fmt.Printf("Teste com k = %d\n", k)
+		fmt.Fprintf(outFile, "Teste com k = %d\n", k)
 
 		var temposSequenciais []time.Duration
 		var temposParalelos []time.Duration
@@ -128,25 +138,28 @@ func main() {
 		sequencialTimes[i] = mediaSequencial
 		paraleloTimes[i] = mediaParalelo
 
-		fmt.Printf("Tempo médio de execução (Sequencial): %.6f segundos\n", mediaSequencial)
-		fmt.Printf("Tempo médio de execução (Paralelizado): %.6f segundos\n", mediaParalelo)
+		fmt.Fprintf(outFile, "Tempo médio de execução (Sequencial): %.6f segundos\n", mediaSequencial)
+		fmt.Fprintf(outFile, "Tempo médio de execução (Paralelizado): %.6f segundos\n", mediaParalelo)
 
 		speedup := calcularSpeedup(mediaSequencial, mediaParalelo)
-		fmt.Printf("Speedup: %.2f\n", speedup)
+		fmt.Fprintf(outFile, "Speedup: %.2f\n", speedup)
 
 		fracaoParalelizavel := calcularFracaoParalelizavel(speedup, 4)
-		fmt.Printf("Fração Paralelizável (p): %.4f\n", fracaoParalelizavel)
+		fmt.Fprintf(outFile, "Fração Paralelizável (p): %.4f\n", fracaoParalelizavel)
 
 		karpFlatt := calcularKarpFlattMetric(speedup, 4)
-		fmt.Printf("Métrica de Karp-Flatt: %.4f\n", karpFlatt)
+		fmt.Fprintf(outFile, "Métrica de Karp-Flatt: %.4f\n", karpFlatt)
 
-		fmt.Println("---------------------------")
+		fmt.Fprintf(outFile, "---------------------------\n")
 	}
 
 	err = gerarGrafico(sequencialTimes, paraleloTimes, ks)
+
 	if err != nil {
 		log.Fatalf("Erro ao gerar gráfico: %v", err)
 	}
+
+	fmt.Println("Execução concluída. Resultados salvos em data/analises.txt")
 }
 
 func gerarGrafico(sequencialTimes, paraleloTimes plotter.Values, ks []int) error {
@@ -159,24 +172,30 @@ func gerarGrafico(sequencialTimes, paraleloTimes plotter.Values, ks []int) error
 	barWidth := vg.Points(10)
 	spaceBetweenBars := vg.Points(5)
 	sequencialBars, err := plotter.NewBarChart(sequencialTimes, barWidth)
+
 	if err != nil {
 		return err
 	}
+
 	sequencialBars.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255}
 	sequencialBars.Offset = -spaceBetweenBars
 
 	paraleloBars, err := plotter.NewBarChart(paraleloTimes, barWidth)
+
 	if err != nil {
 		return err
 	}
+
 	paraleloBars.Color = color.RGBA{R: 0, G: 0, B: 255, A: 255}
 	paraleloBars.Offset = spaceBetweenBars
 	p.Add(sequencialBars, paraleloBars)
 
 	labels := make([]string, len(ks))
+
 	for i, k := range ks {
 		labels[i] = fmt.Sprintf("%d", k)
 	}
+
 	p.NominalX(labels...)
 
 	p.Legend.Add("Sequencial", sequencialBars)
