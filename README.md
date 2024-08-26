@@ -24,8 +24,8 @@ Foram realizadas as seguintes melhorias no projeto:
 
 1. **Clonar o Repositório**:
    ```bash
-   git clone <URL_DO_REPOSITORIO>
-   cd <NOME_DO_DIRETORIO>
+   git clone git@github.com:vitormeloa/gac105-tp.git
+   cd gac105-tp
 
 2. **Rodar o Script**:
    ```bash
