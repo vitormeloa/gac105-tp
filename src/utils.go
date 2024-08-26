@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"gonum.org/v1/plot/plotter"
 	"math"
+	"runtime"
 )
 
 func calcularDistancia(c Cliente, centroide Centroid) float64 {
@@ -35,4 +38,13 @@ func calcularDistanciaEntreCentroids(a, b Centroid) float64 {
 			math.Pow(a.TipoProduto-b.TipoProduto, 2) +
 			math.Pow(a.DiasDesdeUltCompra-b.DiasDesdeUltCompra, 2),
 	)
+}
+
+func calcularSpeedupEficiência(sequencialTimes, paraleloTimes plotter.Values, ks []int) {
+	fmt.Println("\nResultados de Speedup e Eficiência:")
+	for i, k := range ks {
+		speedup := sequencialTimes[i] / paraleloTimes[i]
+		eficiencia := speedup / float64(runtime.NumCPU())
+		fmt.Printf("k = %d | Speedup: %f | Eficiência: %f\n", k, speedup, eficiencia)
+	}
 }

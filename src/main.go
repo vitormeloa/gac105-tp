@@ -15,6 +15,8 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
+const numExecucoes = 10
+
 func carregarDados(nomeArquivo string) ([]Cliente, error) {
 	file, err := os.Open(nomeArquivo)
 	if err != nil {
@@ -107,23 +109,32 @@ func main() {
 	for i, k := range ks {
 		fmt.Printf("Teste com k = %d\n", k)
 
-		startSequencial := time.Now()
-		kmeansSequencial(clientes, k, maxIteracoes, tolerancia)
-		elapsedSequencial := time.Since(startSequencial)
-		sequencialTimes[i] = elapsedSequencial.Seconds()
-		fmt.Printf("Tempo de execução (Sequencial): %s\n", elapsedSequencial)
+		var sequencialTotal, paraleloTotal float64
+		for j := 0; j < numExecucoes; j++ {
+			startSequencial := time.Now()
+			kmeansSequencial(clientes, k, maxIteracoes, tolerancia)
+			elapsedSequencial := time.Since(startSequencial).Seconds()
+			sequencialTotal += elapsedSequencial
 
-		startParalelizado := time.Now()
-		kmeans(clientes, k, maxIteracoes, tolerancia)
-		elapsedParalelizado := time.Since(startParalelizado)
-		paraleloTimes[i] = elapsedParalelizado.Seconds()
-		fmt.Printf("Tempo de execução (Paralelizado): %s\n", elapsedParalelizado)
+			startParalelizado := time.Now()
+			kmeans(clientes, k, maxIteracoes, tolerancia)
+			elapsedParalelizado := time.Since(startParalelizado).Seconds()
+			paraleloTotal += elapsedParalelizado
+		}
+
+		sequencialTimes[i] = sequencialTotal / numExecucoes
+		paraleloTimes[i] = paraleloTotal / numExecucoes
+
+		fmt.Printf("Tempo de execução médio (Sequencial): %f segundos\n", sequencialTimes[i])
+		fmt.Printf("Tempo de execução médio (Paralelizado): %f segundos\n", paraleloTimes[i])
 	}
 
 	err = gerarGrafico(sequencialTimes, paraleloTimes, ks)
 	if err != nil {
 		log.Fatalf("Erro ao gerar gráfico: %v", err)
 	}
+
+	calcularSpeedupEficiência(sequencialTimes, paraleloTimes, ks)
 }
 
 func gerarGrafico(sequencialTimes, paraleloTimes plotter.Values, ks []int) error {
