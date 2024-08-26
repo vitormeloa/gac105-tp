@@ -5,6 +5,7 @@ import (
 	"gonum.org/v1/plot/plotter"
 	"math"
 	"runtime"
+	"time"
 )
 
 func calcularDistancia(c Cliente, centroide Centroid) float64 {
@@ -47,4 +48,24 @@ func calcularSpeedupEficiência(sequencialTimes, paraleloTimes plotter.Values, k
 		eficiencia := speedup / float64(runtime.NumCPU())
 		fmt.Printf("k = %d | Speedup: %f | Eficiência: %f\n", k, speedup, eficiencia)
 	}
+}
+
+func calcularMedia(tempos []time.Duration) float64 {
+	var soma float64
+	for _, t := range tempos {
+		soma += t.Seconds()
+	}
+	return soma / float64(len(tempos))
+}
+
+func calcularSpeedup(T_seq, T_par float64) float64 {
+	return T_seq / T_par
+}
+
+func calcularFracaoParalelizavel(S float64, N int) float64 {
+	return (float64(N) * (S - 1)) / (S * float64(N-1))
+}
+
+func calcularKarpFlattMetric(S float64, N int) float64 {
+	return (1/S - 1/float64(N)) / (1 - 1/float64(N))
 }

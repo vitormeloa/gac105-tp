@@ -3,19 +3,16 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/vg"
 	"image/color"
 	"log"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
-
-	"gonum.org/v1/plot"
-	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/vg"
 )
-
-const numExecucoes = 10
 
 func carregarDados(nomeArquivo string) ([]Cliente, error) {
 	file, err := os.Open(nomeArquivo)
@@ -102,6 +99,7 @@ func main() {
 	ks := []int{1, 2, 3, 5, 8, 13, 21, 34, 55, 89}
 	maxIteracoes := 100
 	tolerancia := 0.0001
+	numExecucoes := 10
 
 	sequencialTimes := make(plotter.Values, len(ks))
 	paraleloTimes := make(plotter.Values, len(ks))
@@ -109,32 +107,51 @@ func main() {
 	for i, k := range ks {
 		fmt.Printf("Teste com k = %d\n", k)
 
-		var sequencialTotal, paraleloTotal float64
+		var temposSequenciais []time.Duration
+		var temposParalelos []time.Duration
+
 		for j := 0; j < numExecucoes; j++ {
+			// Execução Sequencial
 			startSequencial := time.Now()
 			kmeansSequencial(clientes, k, maxIteracoes, tolerancia)
-			elapsedSequencial := time.Since(startSequencial).Seconds()
-			sequencialTotal += elapsedSequencial
+			elapsedSequencial := time.Since(startSequencial)
+			temposSequenciais = append(temposSequenciais, elapsedSequencial)
 
+			// Execução Paralelizada
 			startParalelizado := time.Now()
 			kmeans(clientes, k, maxIteracoes, tolerancia)
-			elapsedParalelizado := time.Since(startParalelizado).Seconds()
-			paraleloTotal += elapsedParalelizado
+			elapsedParalelizado := time.Since(startParalelizado)
+			temposParalelos = append(temposParalelos, elapsedParalelizado)
 		}
 
-		sequencialTimes[i] = sequencialTotal / numExecucoes
-		paraleloTimes[i] = paraleloTotal / numExecucoes
+		mediaSequencial := calcularMedia(temposSequenciais)
+		mediaParalelo := calcularMedia(temposParalelos)
 
-		fmt.Printf("Tempo de execução médio (Sequencial): %f segundos\n", sequencialTimes[i])
-		fmt.Printf("Tempo de execução médio (Paralelizado): %f segundos\n", paraleloTimes[i])
+		sequencialTimes[i] = mediaSequencial
+		paraleloTimes[i] = mediaParalelo
+
+		fmt.Printf("Tempo médio de execução (Sequencial): %.6f segundos\n", mediaSequencial)
+		fmt.Printf("Tempo médio de execução (Paralelizado): %.6f segundos\n", mediaParalelo)
+
+		// Calcular Speedup
+		speedup := calcularSpeedup(mediaSequencial, mediaParalelo)
+		fmt.Printf("Speedup: %.2f\n", speedup)
+
+		// Calcular Fração Paralelizável
+		fracaoParalelizavel := calcularFracaoParalelizavel(speedup, 4) // Considerando 4 threads/processadores
+		fmt.Printf("Fração Paralelizável (p): %.4f\n", fracaoParalelizavel)
+
+		// Calcular Métrica de Karp-Flatt
+		karpFlatt := calcularKarpFlattMetric(speedup, 4)
+		fmt.Printf("Métrica de Karp-Flatt: %.4f\n", karpFlatt)
+
+		fmt.Println("---------------------------")
 	}
 
 	err = gerarGrafico(sequencialTimes, paraleloTimes, ks)
 	if err != nil {
 		log.Fatalf("Erro ao gerar gráfico: %v", err)
 	}
-
-	calcularSpeedupEficiência(sequencialTimes, paraleloTimes, ks)
 }
 
 func gerarGrafico(sequencialTimes, paraleloTimes plotter.Values, ks []int) error {
