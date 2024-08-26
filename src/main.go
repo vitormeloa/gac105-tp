@@ -10,28 +10,6 @@ import (
 	"time"
 )
 
-// Estruturas de dados
-type Cliente struct {
-	Idade              int
-	Genero             int
-	Localizacao        int
-	ValorTotalGasto    float64
-	FrequenciaCompras  int
-	TipoProduto        int
-	DiasDesdeUltCompra int
-}
-
-type Centroid struct {
-	Idade              float64
-	Genero             float64
-	Localizacao        float64
-	ValorTotalGasto    float64
-	FrequenciaCompras  float64
-	TipoProduto        float64
-	DiasDesdeUltCompra float64
-}
-
-// Função para carregar dados
 func carregarDados(nomeArquivo string) ([]Cliente, error) {
 	file, err := os.Open(nomeArquivo)
 	if err != nil {
@@ -110,7 +88,7 @@ func inicializarCentroids(clientes []Cliente, k int) []Centroid {
 }
 
 func main() {
-	clientes, err := carregarDados("../data/clientes.csv")
+	clientes, err := carregarDados("data/clientes.csv")
 	if err != nil {
 		log.Fatalf("Erro ao carregar dados: %v", err)
 	}

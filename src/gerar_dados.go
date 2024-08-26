@@ -55,7 +55,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	numeroClientes := 1000
-	nomeArquivo := "../data/clientes.csv"
+	nomeArquivo := "data/clientes.csv"
 
 	if err := gerarDadosClientes(numeroClientes, nomeArquivo); err != nil {
 		fmt.Println("Erro ao gerar dados:", err)
