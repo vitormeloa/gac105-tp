@@ -3,12 +3,18 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
+	"image/color"
 	"log"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
+
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/vg"
 )
+
 
 func carregarDados(nomeArquivo string) ([]Cliente, error) {
 	file, err := os.Open(nomeArquivo)
@@ -68,7 +74,6 @@ func carregarDados(nomeArquivo string) ([]Cliente, error) {
 	return clientes, nil
 }
 
-// Função para inicializar os centróides
 func inicializarCentroids(clientes []Cliente, k int) []Centroid {
 	rand.Seed(time.Now().UnixNano())
 	centroids := make([]Centroid, k)
@@ -97,17 +102,65 @@ func main() {
 	maxIteracoes := 100
 	tolerancia := 0.0001
 
-	for _, k := range ks {
+	sequencialTimes := make(plotter.Values, len(ks))
+	paraleloTimes := make(plotter.Values, len(ks))
+
+	for i, k := range ks {
 		fmt.Printf("Teste com k = %d\n", k)
 
 		startSequencial := time.Now()
 		kmeansSequencial(clientes, k, maxIteracoes, tolerancia)
 		elapsedSequencial := time.Since(startSequencial)
+		sequencialTimes[i] = elapsedSequencial.Seconds()
 		fmt.Printf("Tempo de execução (Sequencial): %s\n", elapsedSequencial)
 
 		startParalelizado := time.Now()
 		kmeans(clientes, k, maxIteracoes, tolerancia)
 		elapsedParalelizado := time.Since(startParalelizado)
+		paraleloTimes[i] = elapsedParalelizado.Seconds()
 		fmt.Printf("Tempo de execução (Paralelizado): %s\n", elapsedParalelizado)
 	}
+
+	err = gerarGrafico(sequencialTimes, paraleloTimes, ks)
+	if err != nil {
+		log.Fatalf("Erro ao gerar gráfico: %v", err)
+	}
+}
+
+func gerarGrafico(sequencialTimes, paraleloTimes plotter.Values, ks []int) error {
+	p := plot.New()
+
+	p.Title.Text = "Comparação de Tempo de Execução"
+	p.X.Label.Text = "Número de Clusters (k)"
+	p.Y.Label.Text = "Tempo de Execução (segundos)"
+
+	sequencialBars, err := plotter.NewBarChart(sequencialTimes, vg.Points(20))
+	if err != nil {
+		return err
+	}
+	sequencialBars.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255}
+	sequencialBars.Offset = -vg.Points(10)
+	paraleloBars, err := plotter.NewBarChart(paraleloTimes, vg.Points(20))
+	if err != nil {
+		return err
+	}
+	paraleloBars.Color = color.RGBA{R: 0, G: 0, B: 255, A: 255}
+	paraleloBars.Offset = vg.Points(10)
+
+	p.Add(sequencialBars, paraleloBars)
+
+	p.NominalX(fmt.Sprintf("%d", ks[0]), fmt.Sprintf("%d", ks[1]), fmt.Sprintf("%d", ks[2]))
+
+	p.Legend.Add("Sequencial", sequencialBars)
+	p.Legend.Add("Paralelizado", paraleloBars)
+
+	p.Legend.Top = true
+	p.Legend.Left = true
+
+	if err := p.Save(6*vg.Inch, 4*vg.Inch, "comparacao_kmeans.png"); err != nil {
+		return err
+	}
+
+	fmt.Println("Gráfico gerado com sucesso: comparacao_kmeans.png")
+	return nil
 }
