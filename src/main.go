@@ -111,13 +111,11 @@ func main() {
 		var temposParalelos []time.Duration
 
 		for j := 0; j < numExecucoes; j++ {
-			// Execução Sequencial
 			startSequencial := time.Now()
 			kmeansSequencial(clientes, k, maxIteracoes, tolerancia)
 			elapsedSequencial := time.Since(startSequencial)
 			temposSequenciais = append(temposSequenciais, elapsedSequencial)
 
-			// Execução Paralelizada
 			startParalelizado := time.Now()
 			kmeans(clientes, k, maxIteracoes, tolerancia)
 			elapsedParalelizado := time.Since(startParalelizado)
@@ -133,15 +131,12 @@ func main() {
 		fmt.Printf("Tempo médio de execução (Sequencial): %.6f segundos\n", mediaSequencial)
 		fmt.Printf("Tempo médio de execução (Paralelizado): %.6f segundos\n", mediaParalelo)
 
-		// Calcular Speedup
 		speedup := calcularSpeedup(mediaSequencial, mediaParalelo)
 		fmt.Printf("Speedup: %.2f\n", speedup)
 
-		// Calcular Fração Paralelizável
-		fracaoParalelizavel := calcularFracaoParalelizavel(speedup, 4) // Considerando 4 threads/processadores
+		fracaoParalelizavel := calcularFracaoParalelizavel(speedup, 4)
 		fmt.Printf("Fração Paralelizável (p): %.4f\n", fracaoParalelizavel)
 
-		// Calcular Métrica de Karp-Flatt
 		karpFlatt := calcularKarpFlattMetric(speedup, 4)
 		fmt.Printf("Métrica de Karp-Flatt: %.4f\n", karpFlatt)
 
