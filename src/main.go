@@ -15,7 +15,6 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
-
 func carregarDados(nomeArquivo string) ([]Cliente, error) {
 	file, err := os.Open(nomeArquivo)
 	if err != nil {
@@ -98,7 +97,7 @@ func main() {
 		log.Fatalf("Erro ao carregar dados: %v", err)
 	}
 
-	ks := []int{3, 5, 8}
+	ks := []int{1, 2, 3, 5, 8, 13, 21, 34, 55, 89}
 	maxIteracoes := 100
 	tolerancia := 0.0001
 
@@ -157,7 +156,7 @@ func gerarGrafico(sequencialTimes, paraleloTimes plotter.Values, ks []int) error
 	p.Legend.Top = true
 	p.Legend.Left = true
 
-	if err := p.Save(6*vg.Inch, 4*vg.Inch, "comparacao_kmeans.png"); err != nil {
+	if err := p.Save(6*vg.Inch, 4*vg.Inch, "data/comparacao_kmeans.png"); err != nil {
 		return err
 	}
 
