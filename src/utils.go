@@ -67,5 +67,10 @@ func calcularFracaoParalelizavel(S float64, N int) float64 {
 }
 
 func calcularKarpFlattMetric(S float64, N int) float64 {
+	if S <= 0 || N <= 0 {
+		fmt.Println("Valores inválidos para S ou N")
+		return math.NaN() // Valor indefinido
+	}
 	return (1/S - 1/float64(N)) / (1 - 1/float64(N))
 }
+
